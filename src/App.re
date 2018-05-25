@@ -1,73 +1,51 @@
-[@bs.deriving jsConverter]
 type props = {
-  name: string
+  step: int
 };
 
-[@bs.deriving jsConverter]
 type state = {
   count: int,
   label: string,
 };
 
-let adaptReducer =
-  reducer =>
-    jsState =>
-      jsState
-        |> stateFromJs
-        |> reducer
-        |> stateToJs
-;
-
-let adaptView =
-  view =>
-    self =>{
-      let props = propsFromJs(self##props);
-      let state = stateFromJs(self##state);
-      let emitter =  Lemni.emitter(self);
-
-      view(~props, ~state, ~emitter);
+let countReducer =
+  step =>
+    state => {
+      ...state,
+      count: state.count + step,
     };
 
-let countReducer =
-  state => {
-    ...state,
-    count: state.count + 1,
-  };
-
-
-let reactClass = Lemni.make(_sources => {
+let component: Lemni.component(props, state) = _sources => {
   let increment = Xs.create();
 
   {
-    initialState: {
+    initialState: () => {
       count: 0,
       label: "Test",
-    } |> stateToJs,
+    },
 
-    stateReducer: increment |>
-      Xs.map(_ => adaptReducer @@ countReducer)
+    stateReducer: increment
+      |> Xs.map(_ => countReducer(1))
     ,
 
-    view: adaptView @@ (~props, ~state, ~emitter) =>
+    view: (~props, ~state) => {
       <div>
-        {ReasonReact.string(props.name)}
-        {ReasonReact.string(": ")}
+        {ReasonReact.string("Count: ")}
         {ReasonReact.string(string_of_int(state.count))}
 
         <div>
-          <button onClick={(e) => (emitter(increment))##signal(e)}>
+          <button onClick={e => increment |> Xs.shamefullySendNext(e)}>
             {ReasonReact.string(state.label)}
           </button>
         </div>
       </div>
+    }
   };
-});
+};
 
-
-let make = (~name, children) =>
-  ReasonReact.wrapJsForReason(
-    ~props={"name": name},
-    ~reactClass,
-    children
-  );
+let make = (~step, _children) => {
+  Lemni.l(
+    ~component,
+    ~props={step: step},
+  )
+}
   

@@ -1,50 +1,63 @@
-type emitter('a) = {
-  .
-  [@bs.meth] "signal": 'a => unit
-};
-
-type jsSelf('p, 's) = {
-  .
-  "props": 'p,
-  "state": 's,
-};
-
-type jsSources('p, 's) = {
-  .
-  "props": Xs.stream('p),
-  "state": Xs.stream('s),
-};
-
-[@bs.deriving jsConverter]
 type sources('p, 's) = {
   props: Xs.stream('p),
   state: Xs.stream('s),
 };
 
-type jsSinks('p, 's) = {
-  .
-  "initialState": 's,
-  "stateReducer": Xs.stream('s => 's),
-  "view": jsSelf('p, 's) => ReasonReact.reactElement,
-};
-
-[@bs.deriving jsConverter]
 type sinks('p, 's) = {
-  initialState: 's,
+  initialState: unit => 's,
   stateReducer: Xs.stream('s => 's),
-  view: jsSelf('p, 's) => ReasonReact.reactElement,
+  view: (~props: 'p, ~state: 's) => ReasonReact.reactElement,
 };
 
-type mainFunction('p, 's) = jsSources('p, 's) => jsSinks('p, 's);
 
-type lemniComponent('p, 's) = (mainFunction('p, 's)) => ReasonReact.reactClass;
+type component('p, 's) = sources('p, 's) => sinks('p, 's);
 
-[@bs.module "@lemni/core"] external lemni: lemniComponent('p, 's) = "lemni";
+type reducerFn('a) = 'a => 'a;
 
-[@bs.send] external emitter: jsSelf('p, 's) => Xs.stream('a) => emitter('a) = "emitter";
+type action('a) =
+  | Reduce(reducerFn('a))
+;
 
-let wrapper = main => sources =>
-  sinksToJs @@ main @@ sourcesFromJs @@  sources;
+let l = (~component: component('p, 's), ~props) => {
+  let baseComponent = ReasonReact.reducerComponent("Lemni");
+  let sources = {
+    props: Xs.create(),
+    state: Xs.create(),
+  };
 
-let make = main => lemni @@ wrapper @@ main;
+  let sinks = component @@ sources;
 
+  {
+    ...baseComponent,
+
+    initialState: sinks.initialState,
+
+    didMount: self => {
+      let stateReducerListener: Xs.listener('a) = {
+        next: reducer => self.send(Reduce(reducer))
+      };
+
+      sinks.stateReducer
+        |> Xs.subscribe(stateReducerListener);
+
+      self.onUnmount(() =>
+        sinks.stateReducer
+          |> Xs.removeListener(stateReducerListener)
+      );
+    },
+
+    didUpdate: _ =>
+      sources.props
+        |> Xs.shamefullySendNext(props)
+    ,
+
+    reducer: (action, state) =>
+      switch (action) {
+        | Reduce(reducer) => ReasonReact.Update(reducer(state))
+      },
+
+    render: self => {
+      sinks.view(~props=props, ~state=self.state);
+    }
+  };
+};

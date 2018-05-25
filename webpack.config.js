@@ -1,6 +1,7 @@
 const path = require('path');
 
 module.exports = {
+  mode: 'development',
   entry: './lib/es6/src/Main.bs.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -11,5 +12,4 @@ module.exports = {
       { test: /\.js$/, exclude: /node_modules/, loader: "babel-loader" }
     ]
   }
-  
 };
