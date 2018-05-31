@@ -3,10 +3,15 @@ type sources('p, 's) = {
   state: Xs.stream('s),
 };
 
+type viewArgs('p, 's) = {
+  props: 'p,
+  state: 's
+};
+
 type sinks('p, 's) = {
   initialState: unit => 's,
   stateReducer: Xs.stream(('s) => 's),
-  view: (~props: 'p, ~state: 's) => ReasonReact.reactElement,
+  view: viewArgs('p, 's) => ReasonReact.reactElement,
 };
 
 
@@ -20,7 +25,7 @@ type action('a) =
 
 let l = (~component: component('p, 's), ~props) => {
   let baseComponent = ReasonReact.reducerComponent("Lemni");
-  let sources = {
+  let sources: sources('p, 's) = {
     props: Xs.createWithMemory(),
     state: Xs.createWithMemory(),
   };
@@ -54,7 +59,7 @@ let l = (~component: component('p, 's), ~props) => {
     render: self => {
       sources.props
         |> Xs.shamefullySendNext(props);
-      sinks.view(~props=props, ~state=self.state);
+      sinks.view({props, state: self.state});
     }
   };
 };

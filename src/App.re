@@ -36,7 +36,7 @@ let component: Lemni.component(props, state) = sources => {
       |> Xs.map(step => countReducer(step))
     ,
 
-    view: (~props, ~state) => {
+    view: ({state: state}) => {
       <div>
         {ReasonReact.string("Count: ")}
         {ReasonReact.string(string_of_int(state.count))}
