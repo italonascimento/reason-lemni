@@ -1,1 +1,1 @@
-ReactDOMRe.renderToElementWithId(<App step={2} />, "app");
+ReactDOMRe.renderToElementWithId(<App step={3} />, "app");

@@ -12,7 +12,8 @@ type stream('a);
 
 type xs('a) = {
   .
-  [@bs.meth] "create": unit => stream('a)
+  [@bs.meth] "create": unit => stream('a),
+  [@bs.meth] "createWithMemory": unit => stream('a),
 };
 
 
@@ -23,12 +24,14 @@ type mapType('a, 'b) = 'a => 'b => stream('b);
 
 let create = () => xs##create();
 
+let createWithMemory = () => xs##createWithMemory();
+
 [@bs.get_index] external getOf: xs('a) => ([@bs.as "of"] _) => ofType('a) = "";
 let streamOf = a => getOf(xs)(a);
 
 type operator('a, 'b) = stream('a) => 'b;
 
-[@bs.module "xstream/extra/sampleCombine"] external sampleCombine: stream('a) => stream('b) => stream(('a, 'b)) = "default";
+[@bs.module "xstream/extra/sampleCombine"] external sampleCombine: (. stream('b)) => ((. stream('a)) => stream(('a, 'b))) = "default";
 
 [@bs.send.pipe: stream('a)] external map: ('a => 'b) => stream('b) = "map";
 

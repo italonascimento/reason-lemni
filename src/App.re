@@ -6,6 +6,7 @@ type state = {
   count: int,
   label: string,
 };
+  
 
 let countReducer =
   step =>
@@ -14,8 +15,16 @@ let countReducer =
       count: state.count + step,
     };
 
-let component: Lemni.component(props, state) = _sources => {
+let component: Lemni.component(props, state) = sources => {
   let increment = Xs.create();
+
+  let stepOnIncrement = increment
+    |> v => Xs.sampleCombine(
+        .
+        sources.props
+        |> Xs.map(p => p.step)
+      )(.v)
+    |> Xs.map(((_, step)) => step);
 
   {
     initialState: () => {
@@ -23,8 +32,8 @@ let component: Lemni.component(props, state) = _sources => {
       label: "Test",
     },
 
-    stateReducer: increment
-      |> Xs.map(_ => countReducer(1))
+    stateReducer: stepOnIncrement
+      |> Xs.map(step => countReducer(step))
     ,
 
     view: (~props, ~state) => {
