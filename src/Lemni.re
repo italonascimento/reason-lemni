@@ -38,16 +38,14 @@ let l = (~component: component('p, 's), ~props) => {
     initialState: sinks.initialState,
 
     didMount: self => {
-      let stateReducerListener: Xs.listener('a) = {
-        next: reducer => self.send(Reduce(reducer))
-      };
+      let stateReducerNext = reducer => self.send(Reduce(reducer));
 
       sinks.stateReducer
-        |> Xs.subscribe(stateReducerListener);
+        |> Xs.subscribe(~next=stateReducerNext, ());
 
       self.onUnmount(() =>
         sinks.stateReducer
-          |> Xs.removeListener(stateReducerListener)
+          |> Xs.removeListener(~next=stateReducerNext, ())
       );
     },
 
