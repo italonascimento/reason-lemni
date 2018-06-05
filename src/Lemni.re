@@ -40,12 +40,11 @@ let l = (~component: component('p, 's), ~props) => {
     didMount: self => {
       let stateReducerNext = reducer => self.send(Reduce(reducer));
 
-      sinks.stateReducer
+      let subscription = sinks.stateReducer
         |> Xs.subscribe(~next=stateReducerNext, ());
 
       self.onUnmount(() =>
-        sinks.stateReducer
-          |> Xs.removeListener(~next=stateReducerNext, ())
+        subscription.unsubscribe()
       );
     },
 
